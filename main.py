@@ -8,37 +8,21 @@ import os
 
 import pandas as pd
 
+from FoldsLoader.FoldsLoader import *
+
 fold1P = 'Resources\\list\\P_fold_all_1.txt'
 fold1S = 'Resources\\list\\S_fold_all_1.txt'
 
 
-def LoadFold(path, window ,isDeliberate):
-    file_path = 'Resources\\UvA-NEMO\\features\\cross-AU window13'
-    y = []
-    X = []
-    with open(path, 'r') as file:
-        content = file.readlines()
-
-    for line in content:
-        file_name = line.strip() + ".txt"
-        full_path = os.path.join(file_path, file_name)
-
-        with open(full_path, 'r') as file:
-            X_unsplit = file.readlines()[window]
-            X_parts = X_unsplit.strip().split(",")
-            X.append(X_parts)
-            y.append(isDeliberate)
 
 
-    return X,y
-
-
-
-Xp,yp = LoadFold(fold1P, 1,False)
-Xs,ys = LoadFold(fold1S, 1,True)
-
-X = Xp + Xs
-y = yp + ys
+#
+#
+# Xp,yp = LoadFold(fold1P, 1,False)
+# Xs,ys = LoadFold(fold1S, 1,True)
+#
+# X = Xp + Xs
+# y = yp + ys
 
 
 
