@@ -1,22 +1,65 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from sklearn.svm import SVR
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import cross_val_score
+from sklearn.tree import plot_tree
+import os
 
-# Generating non-random data with a sinusoidal pattern
-X = np.linspace(0, 10, 100)[:, np.newaxis]
-y = np.sin(X).ravel() + np.random.normal(0, 0.1, size=X.shape[0])
+import pandas as pd
 
-# Fitting the SVR model
-svr = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=0.1)
-svr.fit(X, y)
+fold1P = 'Resources\\list\\P_fold_all_1.txt'
+fold1S = 'Resources\\list\\S_fold_all_1.txt'
 
-# Plotting with some fun elements
-plt.figure(figsize=(8, 6))
-plt.plot(X, svr.predict(X), color='skyblue', linestyle='-', linewidth=2, label='Predicted')
-plt.scatter(X, y, color='orange', marker='o', label='Actual', alpha=0.7)
-plt.title("Sinusoidal Prediction with SVR", fontsize=16, fontweight='bold', color='purple')
-plt.xlabel("X", fontsize=12, fontstyle='italic', color='green')
-plt.ylabel("y", fontsize=12, fontstyle='italic', color='green')
-plt.legend(loc='upper right', fontsize=10)
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.show()
+
+def LoadFold(path, window ,isDeliberate):
+    file_path = 'Resources\\UvA-NEMO\\features\\cross-AU window13'
+    y = []
+    X = []
+    with open(path, 'r') as file:
+        content = file.readlines()
+
+    for line in content:
+        file_name = line.strip() + ".txt"
+        full_path = os.path.join(file_path, file_name)
+
+        with open(full_path, 'r') as file:
+            X_unsplit = file.readlines()[window]
+            X_parts = X_unsplit.strip().split(",")
+            X.append(X_parts)
+            y.append(isDeliberate)
+
+
+    return X,y
+
+
+
+Xp,yp = LoadFold(fold1P, 1,False)
+Xs,ys = LoadFold(fold1S, 1,True)
+
+X = Xp + Xs
+y = yp + ys
+
+
+
+rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+
+# Step 3: Perform cross-validation
+scores = cross_val_score(rf_classifier, X, y, cv=5)
+
+# Step 4: Print cross-validation scores
+print("Cross-Validation Scores:", scores)
+print("Mean Accuracy:", np.mean(scores))
+
+# foldsW1 = [fold1, fold1,fold1,fold1,fold1,fold1,fold1,fold1,fold1,]
+# folsd = [foldsW1 --- W13]
+
+# scores = cross_val_score(rf_classifier, X, y, cv=5)
+#
+# # Train the random forest classifier
+# rf_classifier.fit(X, y)
+#
+# # Visualize one of the trees in the random forest
+# plt.figure(figsize=(12, 8))
+# plot_tree(rf_classifier.estimators_[0], filled=True)
+# plt.show()
