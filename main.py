@@ -1,7 +1,12 @@
+from Config import WindowMax
 from FoldsLoader import LoadFold
+
 data = LoadFold()
-print(data[0][0][0][0][0])
-    #window,fold,X or y, row, element
+for windowIndex in range(WindowMax):
+    for foldIndex in range(0, 10):
+        X, y = data[windowIndex][foldIndex]
+
+
 
 # import numpy as np
 #
