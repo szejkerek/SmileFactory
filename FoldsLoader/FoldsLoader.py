@@ -42,3 +42,13 @@ def LoadFold():
             WindowFolds.append(fold)
         Folds.append(WindowFolds)
     return Folds
+
+def LoadFoldRanged():
+    paths = LoadFoldsPaths()
+    Folds = []
+    return Folds
+
+def LoadFoldPickOne():
+    paths = LoadFoldsPaths()
+    Folds = []
+    return Folds
