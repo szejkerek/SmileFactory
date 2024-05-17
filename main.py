@@ -2,12 +2,17 @@ from sklearn.model_selection import LeaveOneOut
 from enum import Enum
 from Config import WindowMax, AppVariant, mode, FoldSumaryMode, accuracyVariant, metricVariant, MetricVariant
 from Config import WindowSections
+from Config.persistanData import ClassifierVariant
 from FoldsLoader import LoadFold, LoadFoldPickOne, LoadFoldRanged
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import numpy as np
-
 
 stdDevs = []
 
@@ -21,7 +26,22 @@ else:  # mode == AppVariant.Window_Range
     windowsToProcess = WindowSections
     data = LoadFoldRanged()
 
+pickOneOrRangeMode = mode == AppVariant.Window_Pick_One or mode == AppVariant.Window_Range
 
+classifiers = [
+    (ClassifierVariant.RandomForest, 'Random Forest', RandomForestClassifier(n_estimators=100)),
+    (ClassifierVariant.DecisionTree, 'Decision Tree', DecisionTreeClassifier(max_depth=5)),
+    (ClassifierVariant.SVM, 'SVM', SVC(kernel='linear', probability=True)),
+    (ClassifierVariant.KNN, 'KNN', KNeighborsClassifier(n_neighbors=5)),
+    (ClassifierVariant.NeuralNet, 'Neural Net', MLPClassifier(alpha=1, max_iter=1000)),
+    (ClassifierVariant.NaiveBayes, 'Naive Bayes', GaussianNB())
+]
+
+def GetClassifier(classifierVariant):
+    for clf_type, clf_name, classifier in classifiers:
+        if clf_type == classifierVariant:
+            return clf_name, classifier
+    return None, None
 
 def CalculateAccuracy(foldAccuracy, accuracyVariant):
     if accuracyVariant == FoldSumaryMode.Max:
@@ -49,48 +69,55 @@ def PickedMetric(Y_test, Y_pred):
         result = metrics.log_loss(Y_test, Y_pred)
     return result
 
+chosenClassifiers = [ClassifierVariant.RandomForest]
 
+for cl in chosenClassifiers:
+    clf_name, classifier = GetClassifier(cl)
+    accuracy = []
+    stdDevs = []
+    for windowIndex in range(windowsToProcess):
+        X = data[windowIndex]
+        loo = LeaveOneOut()
+        loo.get_n_splits(X)
+        foldAccuracy = []
+        print(f'Window id: {windowIndex} for classifier: {clf_name}')
+        for i, (train_index, test_index) in enumerate(loo.split(X)):
+            X_train = []
+            Y_train = []
+            for trainID in train_index:
+                X_temp, Y_temp = X[trainID]
+                X_train += X_temp
+                Y_train += Y_temp
+            X_test, Y_test = X[test_index[0]]
 
-accuracy = []
-for windowIndex in range(windowsToProcess):
-    X = data[windowIndex]
-    loo = LeaveOneOut()
-    loo.get_n_splits(X)
-    foldAccuracy = []
-    print(f'Window id: {windowIndex}')
-    for i, (train_index, test_index) in enumerate(loo.split(X)):
-        X_train = []
-        Y_train = []
-        for trainID in train_index:
-            X_temp, Y_temp = X[trainID]
-            X_train += X_temp
-            Y_train += Y_temp
-        X_test, Y_test = X[test_index[0]]
+            clf = classifier
+            clf.fit(X_train, Y_train)
+            Y_pred = clf.predict(X_test)
+            foldAccuracy.append(PickedMetric(Y_test, Y_pred))
 
-        clf = RandomForestClassifier(n_estimators=100)
-        clf.fit(X_train, Y_train)
-        Y_pred = clf.predict(X_test)
-        foldAccuracy.append(PickedMetric(Y_test, Y_pred))
+        accuracy.append(CalculateAccuracy(foldAccuracy,accuracyVariant))
 
-    accuracy.append(CalculateAccuracy(foldAccuracy,accuracyVariant))
+    print(f'Accuracy for {clf_name}: {accuracy}')
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(windowsToProcess), accuracy, marker='o', linestyle='-', label=f'{metricVariant.name} {accuracyVariant.name}', color='b')
+    if accuracyVariant == FoldSumaryMode.Average:
+        plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5, label='Standard Deviation')
+    plt.title(f'{metricVariant.name} {accuracyVariant.name} Across Different {mode.name}', fontsize=16, fontweight='bold')
+    plt.xticks(range(len(accuracy)), fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.ylim(0.5, 1)
+    plt.xlabel('Window', fontsize=14)
+    plt.ylabel(metricVariant.name)
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(fontsize=9)
 
-print(accuracy)
-plt.figure(figsize=(10, 6))
-plt.plot(range(windowsToProcess), accuracy, marker='o', linestyle='-', label=f'{metricVariant.name} {accuracyVariant.name}', color='b')
-if accuracyVariant == FoldSumaryMode.Average:
-    plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5, label='Standard Deviation')
-plt.title(f'{metricVariant.name} {accuracyVariant.name} Across Different {mode.name}', fontsize=16, fontweight='bold')
-plt.xticks(range(len(accuracy)), fontsize=12)
-plt.yticks(fontsize=12)
-plt.ylim(0.5, 1)
-plt.xlabel('Window', fontsize=14)
-plt.ylabel(metricVariant.name)
-plt.grid(True, linestyle='--', alpha=0.7)
-plt.legend(fontsize=9)
+    for i, value in enumerate(accuracy):
+        plt.annotate(f'{value:.4f}', (i, value), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=10)
 
-for i, value in enumerate(accuracy):
-    plt.annotate(f'{value:.4f}', (i, value), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=10)
+    plt.gca().set_facecolor('#f9f9f9')
+    plt.tight_layout()
 
-plt.gca().set_facecolor('#f9f9f9')
-plt.tight_layout()
+    manager = plt.get_current_fig_manager()
+    manager.set_window_title(f'{clf_name}')
+
 plt.show()
