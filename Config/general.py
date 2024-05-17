@@ -1,14 +1,12 @@
-from enum import Enum
-DataFolder = 'Resources\\UvA-NEMO\\features\\cross-AU window13'
-FoldsPath = 'Resources\\list'
-WindowMax = 12
+from Config.persistanData import AppVariant, AccuracyVariant, MetricVariant
+
+WindowMax = 2
 WindowSections = 4
 IsDeliberate = True
+mode = AppVariant.Window_Number
+accuracyVariant = AccuracyVariant.Average
+metricVariant = MetricVariant.F1
 
 
-class AppVariant(Enum):
-    WindowNumber = 1
-    WindowPickOne = 2
-    WindowRange = 3
 
 

@@ -2,6 +2,9 @@ import os
 from Config.general import *
 import numpy as np
 
+from Config.persistanData import DataFolder, FoldsPath
+
+
 def ProjectRoot():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     return str(os.path.dirname(script_dir))
