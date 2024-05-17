@@ -1,6 +1,6 @@
 from sklearn.model_selection import LeaveOneOut
 from enum import Enum
-from Config import WindowMax
+from Config import WindowMax, AppVariant
 from Config import WindowSections
 from FoldsLoader import LoadFold
 from FoldsLoader import LoadFoldPickOne
@@ -10,10 +10,6 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 
 
-class AppVariant(Enum):
-    WindowNumber = 1
-    WindowProportionalPickOne = 2
-    WindowProportionalRange = 3
 
 
 mode = AppVariant.WindowProportionalPickOne
