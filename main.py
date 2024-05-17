@@ -76,13 +76,21 @@ for windowIndex in range(windowsToProcess):
 
 print(accuracy)
 plt.figure(figsize=(10, 6))
-plt.plot(range(windowsToProcess), accuracy, marker='o', linestyle='-')
+plt.plot(range(windowsToProcess), accuracy, marker='o', linestyle='-', label=f'{metricVariant.name} {accuracyVariant.name}', color='b')
 if accuracyVariant == AccuracyVariant.Average:
-    plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='yellow', elinewidth=2, capsize=5, label='Standard Deviation')
-plt.title(f'{metricVariant.name} {accuracyVariant.name} Across Different {mode.name}')
-plt.xticks(range(len(accuracy)))
+    plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5, label='Standard Deviation')
+plt.title(f'{metricVariant.name} {accuracyVariant.name} Across Different {mode.name}', fontsize=16, fontweight='bold')
+plt.xticks(range(len(accuracy)), fontsize=12)
+plt.yticks(fontsize=12)
 plt.ylim(0.5, 1)
-plt.xlabel('Window')
+plt.xlabel('Window', fontsize=14)
 plt.ylabel(metricVariant.name)
-plt.grid(True)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend(fontsize=9)
+
+for i, value in enumerate(accuracy):
+    plt.annotate(f'{value:.4f}', (i, value), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=10)
+
+plt.gca().set_facecolor('#f9f9f9')
+plt.tight_layout()
 plt.show()

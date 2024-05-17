@@ -1,6 +1,6 @@
 from Config.persistanData import AppVariant, AccuracyVariant, MetricVariant
 
-WindowMax = 2
+WindowMax = 3
 WindowSections = 4
 IsDeliberate = True
 mode = AppVariant.Window_Number
