@@ -80,7 +80,7 @@ for cl in chosenClassifiers:
         loo = LeaveOneOut()
         loo.get_n_splits(X)
         foldAccuracy = []
-        print(f'Window id: {windowIndex} for classifier: {clf_name}')
+        print(f'Window {"range " if pickOneOrRangeMode else ""}index: {windowIndex} for classifier: {clf_name}')
         for i, (train_index, test_index) in enumerate(loo.split(X)):
             X_train = []
             Y_train = []
@@ -97,13 +97,17 @@ for cl in chosenClassifiers:
 
         accuracy.append(CalculateAccuracy(foldAccuracy,accuracyVariant))
 
+    xAxisLabels = range(len(accuracy))
+    if pickOneOrRangeMode:
+        xAxisLabels = [ f'{(i / windowsToProcess):.2f}-{((i+1) / windowsToProcess):.2f}' for i in range(windowsToProcess)] 
+    
     print(f'Accuracy for {clf_name}: {accuracy}')
     plt.figure(figsize=(10, 6))
     plt.plot(range(windowsToProcess), accuracy, marker='o', linestyle='-', label=f'{metricVariant.name} {accuracyVariant.name}', color='b')
     if accuracyVariant == FoldSumaryMode.Average:
         plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5, label='Standard Deviation')
     plt.title(f'{metricVariant.name} {accuracyVariant.name} Across Different {mode.name}', fontsize=16, fontweight='bold')
-    plt.xticks(range(len(accuracy)), fontsize=12)
+    plt.xticks(range(len(accuracy)), xAxisLabels, fontsize=12)
     plt.yticks(fontsize=12)
     plt.ylim(0.5, 1)
     plt.xlabel('Window', fontsize=14)
