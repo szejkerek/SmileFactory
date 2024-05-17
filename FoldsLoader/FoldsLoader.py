@@ -1,5 +1,6 @@
 import os
 from Config.general import *
+import numpy as np
 
 def ProjectRoot():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -12,6 +13,48 @@ def FoldForWindow(fold, window):
         with open(os.path.join(ProjectRoot(), DataFolder, file), 'r') as file:
             X_unsplit = file.readlines()[window]
             X_parts = [float(x) for x in X_unsplit.strip().split(",")]
+            X.append(X_parts)
+            y.append("deliberate" in file.name)
+
+    return X, y
+
+def FoldForPickOne(fold, position):
+    X = []
+    y = []
+    for file in fold:
+        with open(os.path.join(ProjectRoot(), DataFolder, file), 'r') as file:
+            X_tmp = file.readlines()
+            X_total_lines = len(X_tmp)
+            read_position = (X_total_lines - 1) * position // (WindowSections - 1)
+            X_unsplit = X_tmp[read_position]
+            X_parts = [float(x) for x in X_unsplit.strip().split(",")]
+            X.append(X_parts)
+            y.append("deliberate" in file.name)
+
+    return X, y
+
+def FoldForPickRange(fold, position):
+    X = []
+    y = []
+    for file in fold:
+        with open(os.path.join(ProjectRoot(), DataFolder, file), 'r') as file:
+            X_tmp = file.readlines()
+            X_total_lines = len(X_tmp)
+
+            range_start_position = X_total_lines * position // WindowSections
+            range_end_position = X_total_lines * (position + 1) // WindowSections
+
+            X_tmp_unsplit = X_tmp[range_start_position]
+            X_tmp_parts = [float(x) for x in X_tmp_unsplit.strip().split(",")]
+            X_sum_parts = np.array(X_tmp_parts)
+
+            for i in range(range_start_position + 1, range_end_position):
+                X_tmp_unsplit = X_tmp[i]
+                X_tmp_parts = [float(x) for x in X_tmp_unsplit.strip().split(",")]
+                X_sum_parts = X_sum_parts + np.array(X_tmp_parts)
+
+            X_sum_parts = X_sum_parts / (range_end_position - range_start_position)
+            X_parts = X_sum_parts.tolist()
             X.append(X_parts)
             y.append("deliberate" in file.name)
 
@@ -36,7 +79,7 @@ def LoadFold():
         WindowFolds = []
         for n in range(1, 11):
             fold = []
-            X, y = FoldForWindow(paths[n], 0)
+            X, y = FoldForWindow(paths[n], w) #Był chyba błąd 0 zamiast zmiennej okna
             fold.append(X)
             fold.append(y)
             WindowFolds.append(fold)
@@ -46,9 +89,27 @@ def LoadFold():
 def LoadFoldRanged():
     paths = LoadFoldsPaths()
     Folds = []
+    for w in range(WindowSections):
+        WindowFolds = []
+        for n in range(1, 11):
+            fold = []
+            X, y = FoldForPickRange(paths[n], w)
+            fold.append(X)
+            fold.append(y)
+            WindowFolds.append(fold)
+        Folds.append(WindowFolds)
     return Folds
 
 def LoadFoldPickOne():
     paths = LoadFoldsPaths()
     Folds = []
+    for w in range(WindowSections):
+        WindowFolds = []
+        for n in range(1, 11):
+            fold = []
+            X, y = FoldForPickOne(paths[n], w)
+            fold.append(X)
+            fold.append(y)
+            WindowFolds.append(fold)
+        Folds.append(WindowFolds)
     return Folds
