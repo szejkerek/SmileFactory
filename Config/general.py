@@ -1,12 +1,9 @@
-from Config.persistanData import AppVariant, AccuracyVariant, MetricVariant
+from Config.persistanData import AppVariant, FoldSumaryMode, MetricVariant
 
-WindowMax = 3
-WindowSections = 4
-IsDeliberate = True
-mode = AppVariant.Window_Number
-accuracyVariant = AccuracyVariant.Average
+accuracyVariant = FoldSumaryMode.Average
 metricVariant = MetricVariant.F1
 
-
-
+mode = AppVariant.Window_Number
+WindowMax = 3 #If window number
+WindowSections = 4 #If Window_Pick_One or Window_Range
 
