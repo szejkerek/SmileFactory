@@ -1,6 +1,7 @@
 from sklearn.model_selection import LeaveOneOut
 from enum import Enum
-from Config import WindowMax, AppVariant, mode, FoldSumaryMode, accuracyVariant, metricVariant, MetricVariant
+from Config import WindowMax, AppVariant, mode, FoldSummaryMode, accuracyVariant, metricVariant, MetricVariant, \
+    chosenClassifiers
 from Config import WindowSections
 from Config.persistanData import ClassifierVariant
 from FoldsLoader import LoadFold, LoadFoldPickOne, LoadFoldRanged
@@ -44,9 +45,9 @@ def GetClassifier(classifierVariant):
     return None, None
 
 def CalculateAccuracy(foldAccuracy, accuracyVariant):
-    if accuracyVariant == FoldSumaryMode.Max:
+    if accuracyVariant == FoldSummaryMode.Max:
         result = max(foldAccuracy)
-    elif accuracyVariant == FoldSumaryMode.Min:
+    elif accuracyVariant == FoldSummaryMode.Min:
         result = min(foldAccuracy)
     else:  # accuracyVariant == AccuracyVariant.Average
         result = np.mean(foldAccuracy)
@@ -69,7 +70,7 @@ def PickedMetric(Y_test, Y_pred):
         result = metrics.log_loss(Y_test, Y_pred)
     return result
 
-chosenClassifiers = [ClassifierVariant.RandomForest]
+
 
 for cl in chosenClassifiers:
     clf_name, classifier = GetClassifier(cl)
@@ -104,7 +105,7 @@ for cl in chosenClassifiers:
     print(f'Accuracy for {clf_name}: {accuracy}')
     plt.figure(figsize=(10, 6))
     plt.plot(range(windowsToProcess), accuracy, marker='o', linestyle='-', label=f'{metricVariant.name} {accuracyVariant.name}', color='b')
-    if accuracyVariant == FoldSumaryMode.Average:
+    if accuracyVariant == FoldSummaryMode.Average:
         plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5, label='Standard Deviation')
     plt.title(f'{metricVariant.name} {accuracyVariant.name} Across Different {mode.name}', fontsize=16, fontweight='bold')
     plt.xticks(range(len(accuracy)), xAxisLabels, fontsize=12)

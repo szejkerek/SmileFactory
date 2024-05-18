@@ -1,6 +1,7 @@
-from Config.persistanData import AppVariant, FoldSumaryMode, MetricVariant
+from Config.persistanData import AppVariant, FoldSummaryMode, MetricVariant, ClassifierVariant
 
-accuracyVariant = FoldSumaryMode.Average
+chosenClassifiers = [ClassifierVariant.RandomForest]
+accuracyVariant = FoldSummaryMode.Average
 metricVariant = MetricVariant.F1
 
 mode = AppVariant.Window_Range
