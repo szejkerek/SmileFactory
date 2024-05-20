@@ -1,6 +1,6 @@
 from sklearn.model_selection import LeaveOneOut
 from enum import Enum
-from Config import WindowMax, AppVariant, mode, FoldSummaryMode, accuracyVariant, metricVariant, MetricVariant, \
+from Config import WindowMax, AppVariant, mode, metricVariant, MetricVariant, \
     chosenClassifiers
 from Config import WindowSections
 from Config.persistanData import ClassifierVariant
@@ -44,31 +44,30 @@ def GetClassifier(classifierVariant):
             return clf_name, classifier
     return None, None
 
-def CalculateAccuracy(foldAccuracy, accuracyVariant):
-    if accuracyVariant == FoldSummaryMode.Max:
-        result = max(foldAccuracy)
-    elif accuracyVariant == FoldSummaryMode.Min:
-        result = min(foldAccuracy)
-    else:  # accuracyVariant == AccuracyVariant.Average
-        result = np.mean(foldAccuracy)
-        stdDevs.append(np.std(foldAccuracy))
+def CalculateAccuracy(foldMetrics):
+    temp = {}
+    for metric in foldMetrics:
+        for key, value in metric.items():
+            if key not in temp:
+                temp[key] = []
+            temp[key].append(value)
+
+    result = {}
+    for key, value in temp.items():
+        result[key] = (np.mean(value), np.std(value))
+
     return result
 
 def PickedMetric(Y_test, Y_pred):
-    result = 0
-    if metricVariant == MetricVariant.Accuracy:
-        result = metrics.accuracy_score(Y_test, Y_pred)
-    elif metricVariant == MetricVariant.Precision:
-        result = metrics.precision_score(Y_test, Y_pred)
-    elif metricVariant == MetricVariant.Recall:
-        result = metrics.recall_score(Y_test, Y_pred)
-    elif metricVariant == MetricVariant.F1:
-        result = metrics.f1_score(Y_test, Y_pred)
-    elif metricVariant == MetricVariant.ROC:
-        result = metrics.roc_auc_score(Y_test, Y_pred)
-    elif metricVariant == MetricVariant.LogLoss:
-        result = metrics.log_loss(Y_test, Y_pred)
-    return result
+    results = {}
+    results['Accuracy'] = metrics.accuracy_score(Y_test, Y_pred)
+    results['Precision'] = metrics.precision_score(Y_test, Y_pred)
+    results['Recall'] = metrics.recall_score(Y_test, Y_pred)
+    results['F1'] = metrics.f1_score(Y_test, Y_pred)
+    results['ROC'] = metrics.roc_auc_score(Y_test, Y_pred)
+    results['LogLoss'] = metrics.log_loss(Y_test, Y_pred)
+    return results
+
 
 
 
@@ -96,7 +95,7 @@ for cl in chosenClassifiers:
             Y_pred = clf.predict(X_test)
             foldAccuracy.append(PickedMetric(Y_test, Y_pred))
 
-        accuracy.append(CalculateAccuracy(foldAccuracy,accuracyVariant))
+        accuracy.append(CalculateAccuracy(foldAccuracy))
 
     xAxisLabels = range(len(accuracy))
     if pickOneOrRangeMode:
@@ -105,9 +104,9 @@ for cl in chosenClassifiers:
     print(f'Accuracy for {clf_name}: {accuracy}')
     plt.figure(figsize=(10, 6))
     plt.plot(range(windowsToProcess), accuracy, marker='o', linestyle='-', label=f'{metricVariant.name} {accuracyVariant.name}', color='b')
-    if accuracyVariant == FoldSummaryMode.Average:
-        plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5, label='Standard Deviation')
-    plt.title(f'{metricVariant.name} {accuracyVariant.name} Across Different {mode.name}', fontsize=16, fontweight='bold')
+    # accuracyVariant == FoldSummaryMode.Average:
+    plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5, label='Standard Deviation')
+    plt.title(f'{metricVariant.name} Across Different {mode.name}', fontsize=16, fontweight='bold')
     plt.xticks(range(len(accuracy)), xAxisLabels, fontsize=12)
     plt.yticks(fontsize=12)
     plt.ylim(0.5, 1)
