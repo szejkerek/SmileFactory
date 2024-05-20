@@ -11,5 +11,5 @@ class ClassifierVariant(Enum):
     NeuralNet = 5
     NaiveBayes = 6
 
-DataFolder = 'Resources\\UvA-NEMO\\features\\cross-AU window25'
+DataFolder = 'Resources\\UvA-NEMO\\features\\cross-AU window13'
 FoldsPath = 'Resources\\list'
