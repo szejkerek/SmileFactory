@@ -1,10 +1,8 @@
 from sklearn.model_selection import LeaveOneOut
-from enum import Enum
-from Config import WindowMax, AppVariant, mode, metricVariant, MetricVariant, \
-    chosenClassifiers
+from Config import AppVariant, mode, chosenClassifiers
 from Config import WindowSections
 from Config.persistanData import ClassifierVariant
-from FoldsLoader import LoadFold, LoadFoldPickOne, LoadFoldRanged
+from FoldsLoader import LoadFoldPickOne, LoadFoldRanged
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -14,17 +12,22 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+from datetime import datetime
+
+
+current_time = datetime.now()
+folder_name = current_time.strftime("%Y-%m-%d_%H-%M-%S")
+data_dir = "Data"
+folder_path = os.path.join(data_dir, folder_name)
+os.makedirs(folder_path)
+
 
 stdDevs = []
-
-if mode == AppVariant.Window_Number:
-    windowsToProcess = WindowMax
-    data = LoadFold()
-elif mode == AppVariant.Window_Pick_One:
-    windowsToProcess = WindowSections
+windowsToProcess = WindowSections
+if mode == AppVariant.Window_Pick_One:
     data = LoadFoldPickOne()
 else:  # mode == AppVariant.Window_Range
-    windowsToProcess = WindowSections
     data = LoadFoldRanged()
 
 pickOneOrRangeMode = mode == AppVariant.Window_Pick_One or mode == AppVariant.Window_Range
@@ -38,11 +41,13 @@ classifiers = [
     (ClassifierVariant.NaiveBayes, 'Naive Bayes', GaussianNB())
 ]
 
+
 def GetClassifier(classifierVariant):
     for clf_type, clf_name, classifier in classifiers:
         if clf_type == classifierVariant:
             return clf_name, classifier
     return None, None
+
 
 def CalculateAccuracy(foldMetrics):
     temp = {}
@@ -58,6 +63,7 @@ def CalculateAccuracy(foldMetrics):
 
     return result
 
+
 def PickedMetric(Y_test, Y_pred):
     results = {}
     results['Accuracy'] = metrics.accuracy_score(Y_test, Y_pred)
@@ -69,12 +75,9 @@ def PickedMetric(Y_test, Y_pred):
     return results
 
 
-
-
-for cl in chosenClassifiers:
+def CalculateMatrics(cl):
     clf_name, classifier = GetClassifier(cl)
-    accuracy = []
-    stdDevs = []
+    metricsResults = []
     for windowIndex in range(windowsToProcess):
         X = data[windowIndex]
         loo = LeaveOneOut()
@@ -95,33 +98,73 @@ for cl in chosenClassifiers:
             Y_pred = clf.predict(X_test)
             foldAccuracy.append(PickedMetric(Y_test, Y_pred))
 
-        accuracy.append(CalculateAccuracy(foldAccuracy))
+        metricsResults.append(CalculateAccuracy(foldAccuracy))
+    return metricsResults
 
-    xAxisLabels = range(len(accuracy))
+def SetUpSubPlot(axs, windowsCount, metric, std, title):
+    xAxisLabels = windowsCount
     if pickOneOrRangeMode:
-        xAxisLabels = [ f'{(i / windowsToProcess):.2f}-{((i+1) / windowsToProcess):.2f}' for i in range(windowsToProcess)] 
-    
-    print(f'Accuracy for {clf_name}: {accuracy}')
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(windowsToProcess), accuracy, marker='o', linestyle='-', label=f'{metricVariant.name} {accuracyVariant.name}', color='b')
-    # accuracyVariant == FoldSummaryMode.Average:
-    plt.errorbar(range(len(accuracy)), accuracy, yerr=stdDevs, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5, label='Standard Deviation')
-    plt.title(f'{metricVariant.name} Across Different {mode.name}', fontsize=16, fontweight='bold')
-    plt.xticks(range(len(accuracy)), xAxisLabels, fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.ylim(0.5, 1)
-    plt.xlabel('Window', fontsize=14)
-    plt.ylabel(metricVariant.name)
-    plt.grid(True, linestyle='--', alpha=0.7)
-    plt.legend(fontsize=9)
+        xAxisLabels = [f'{(i / 7):.2f}-{((i + 1) / 7):.2f}' for i in
+                       windowsCount]
 
-    for i, value in enumerate(accuracy):
-        plt.annotate(f'{value:.4f}', (i, value), textcoords="offset points", xytext=(0, 10), ha='center', fontsize=10)
+    axs.plot(windowsCount, metric, marker='o', linestyle='-', color='b', label=f'{title}')
+    axs.errorbar(windowsCount, metric, yerr=std, fmt='o', color='red', ecolor='orange', elinewidth=2, capsize=5,
+                 label='Standard Deviation')
 
-    plt.gca().set_facecolor('#f9f9f9')
-    plt.tight_layout()
+    axs.set_xticks(windowsCount)
+    axs.set_xticklabels(xAxisLabels, rotation=20, ha='right')
 
-    manager = plt.get_current_fig_manager()
-    manager.set_window_title(f'{clf_name}')
+    axs.set_title(title, fontsize= 16)
 
-plt.show()
+    axs.grid(True, linestyle='--', alpha=0.7)
+
+    for i, value in enumerate(metric):
+        axs.annotate(f'{value:.4f}', (windowsCount[i], value), textcoords="offset points", xytext=(0, 10), ha='center')
+    if(np.mean(metric) <= 1):
+        axs.set_ylim(0.5, 1)
+    axs.set_facecolor('#f9f9f9')
+
+    return axs
+
+
+def CreatPlotFor(metrics, cl):
+    clf_name, classifier = GetClassifier(cl)
+    fig, axs = plt.subplots(2, 3, figsize=(15, 10))
+
+    folds = list(range(len(metrics)))
+    accuracy = [metric["Accuracy"][0] for metric in metrics]
+    accuracy_std = [metric["Accuracy"][1] for metric in metrics]
+    precision = [metric["Precision"][0] for metric in metrics]
+    precision_std = [metric["Precision"][1] for metric in metrics]
+    recall = [metric["Recall"][0] for metric in metrics]
+    recall_std = [metric["Recall"][1] for metric in metrics]
+    f1_score = [metric["F1"][0] for metric in metrics]
+    f1_score_std = [metric["F1"][1] for metric in metrics]
+    roc_auc = [metric["ROC"][0] for metric in metrics]
+    roc_auc_std = [metric["ROC"][1] for metric in metrics]
+    log_loss = [metric["LogLoss"][0] for metric in metrics]
+    log_loss_std = [metric["LogLoss"][1] for metric in metrics]
+
+    axs[0][0] = SetUpSubPlot(axs[0][0], folds, accuracy, accuracy_std, "Accuracy")
+
+    axs[0][1] = SetUpSubPlot(axs[0][1], folds, precision, precision_std, "Precision")
+
+    axs[0][2] = SetUpSubPlot(axs[0][2], folds, recall, recall_std, "Recall")
+
+    axs[1][0] = SetUpSubPlot(axs[1][0], folds, f1_score, f1_score_std, "F1 Score")
+
+    axs[1][1] = SetUpSubPlot(axs[1][1], folds, roc_auc, roc_auc_std, "ROC")
+
+    axs[1][2] = SetUpSubPlot(axs[1][2], folds, log_loss, log_loss_std, "Log Loss")
+
+    fig.suptitle(clf_name, fontsize=40)
+    fig.tight_layout()
+
+    plt.subplots_adjust(left=None, bottom=0.06, right=None, top=0.9, wspace=None, hspace=0.2)
+    plt.savefig(os.path.join(folder_path, f'{clf_name}.png'))
+
+
+
+
+for cl in chosenClassifiers:
+    CreatPlotFor(CalculateMatrics(cl), cl)
