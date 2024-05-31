@@ -162,9 +162,22 @@ def CreatPlotFor(metrics, cl):
 
     plt.subplots_adjust(left=None, bottom=0.06, right=None, top=0.9, wspace=None, hspace=0.2)
     plt.savefig(os.path.join(folder_path, f'{clf_name}.png'))
+    metric_names = ["Accuracy", "Precision", "Recall", "F1 Score", "ROC", "Log Loss"]
+    metric_values_list = [accuracy, precision, recall, f1_score, roc_auc, log_loss]
+    std_values_list = [accuracy_std, precision_std, recall_std, f1_score_std, roc_auc_std, log_loss_std]
 
-
-
+    mean_std_metrics = {}
+    for metric_name, metric_values, std_values in zip(metric_names, metric_values_list, std_values_list):
+        mean_metric = np.mean(metric_values)
+        std_metric = np.mean(std_values)
+        print(f"{clf_name} - {metric_name}: Mean={mean_metric}, Std={std_metric}")
+        
+        print(f"{metric_name} values for each interval:")
+        for i in range(len(metric_values)):
+            print(f"Interval {i}: Mean={metric_values[i]}, Std={std_values[i]}")
+        
+        mean_std_metrics[metric_name] = (mean_metric, std_metric)
+    return mean_std_metrics
 
 for cl in chosenClassifiers:
     CreatPlotFor(CalculateMatrics(cl), cl)
